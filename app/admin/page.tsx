@@ -1,122 +1,64 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Mail,
-  CheckCircle,
-  Circle,
-  Trash2,
-  Lock,
-  ArrowLeft,
-  RefreshCw,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Mail, PenTool, Lock, ArrowLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 
-interface Message {
-  id: string;
-  name: string;
-  email: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-}
+// Sub-components
+import MessagesPanel from "@/components/admin/MessagesPanel";
+import BlogPanel from "@/components/admin/BlogPanel";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"messages" | "blog">("blog");
 
-  const getStoredPassword = () => {
-    if (typeof window !== "undefined") {
-      return sessionStorage.getItem("admin_password") || "";
+  useEffect(() => {
+    // Check if password exists in sessionStorage
+    const stored = sessionStorage.getItem("admin_password");
+    if (stored) {
+      verifyPassword(stored);
+    } else {
+      setLoading(false);
     }
-    return "";
-  };
+  }, []);
 
-  const fetchMessages = useCallback(async (pass: string) => {
+  const verifyPassword = async (pass: string) => {
     setLoading(true);
-    setError("");
+    // Use the messages route just to verify the password since it checks x-admin-password
     const res = await fetch("/api/admin/messages", {
       headers: { "x-admin-password": pass },
     });
-
-    if (res.status === 401) {
-      setAuthenticated(false);
-      sessionStorage.removeItem("admin_password");
-      setError("Invalid password");
-      setLoading(false);
-      return;
-    }
-
-    const data = await res.json();
+    
     if (res.ok) {
-      setMessages(data);
+      sessionStorage.setItem("admin_password", pass);
+      setAuthenticated(true);
+      setError("");
     } else {
-      setError(data.error || "Failed to load messages");
+      sessionStorage.removeItem("admin_password");
+      setAuthenticated(false);
+      setError("Invalid password");
     }
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    const stored = getStoredPassword();
-    if (stored) {
-      setAuthenticated(true);
-      fetchMessages(stored);
-    }
-  }, [fetchMessages]);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    sessionStorage.setItem("admin_password", password);
-    setAuthenticated(true);
-    await fetchMessages(password);
+    await verifyPassword(password);
   };
 
-  const toggleRead = async (id: string, read: boolean) => {
-    const pass = getStoredPassword();
-    await fetch("/api/admin/messages", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-password": pass,
-      },
-      body: JSON.stringify({ id, read: !read }),
-    });
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, read: !read } : m))
-    );
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin_password");
+    setAuthenticated(false);
+    setPassword("");
   };
 
-  const deleteMessage = async (id: string) => {
-    const pass = getStoredPassword();
-    await fetch("/api/admin/messages", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-password": pass,
-      },
-      body: JSON.stringify({ id }),
-    });
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    if (selected === id) setSelected(null);
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const unreadCount = messages.filter((m) => !m.read).length;
-  const selectedMessage = messages.find((m) => m.id === selected);
+  if (loading) {
+    return <div className="min-h-screen bg-background text-foreground flex items-center justify-center">Loading...</div>;
+  }
 
   // Login screen
   if (!authenticated) {
@@ -149,7 +91,7 @@ export default function AdminPage() {
               placeholder="Password"
               className="w-full bg-foreground/[0.02] border border-foreground/5 rounded-xl px-5 py-4 text-sm font-sans text-foreground placeholder:text-foreground/20 outline-none focus:border-accent/40 transition-colors duration-300"
             />
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-red-400 text-xs text-center">{error}</p>}
             <button
               type="submit"
               className="w-full py-3 bg-foreground text-background rounded-full text-[9px] uppercase tracking-[0.2em] font-bold hover:scale-[1.02] transition-all duration-300"
@@ -172,159 +114,57 @@ export default function AdminPage() {
 
   // Admin dashboard
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="border-b border-foreground/5 px-8 py-5 flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <Link
-            href="/"
-            className="text-[10px] uppercase tracking-[0.2em] font-bold text-foreground/30 hover:text-accent transition-colors duration-300 flex items-center space-x-2"
-          >
-            <ArrowLeft size={12} />
-            <span>Site</span>
-          </Link>
-          <h1 className="text-lg font-serif font-black tracking-tighter">
-            Messages
-          </h1>
-          {unreadCount > 0 && (
-            <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-accent bg-accent/10 px-3 py-1 rounded-full">
-              {unreadCount} new
-            </span>
-          )}
+    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+      {/* Sidebar navigation */}
+      <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-foreground/5 p-6 flex flex-col justify-between">
+        <div>
+          <div className="mb-12">
+            <Link
+              href="/"
+              className="text-[10px] uppercase tracking-[0.2em] font-bold text-foreground/30 hover:text-accent transition-colors duration-300 flex items-center space-x-2 mb-6"
+            >
+              <ArrowLeft size={12} />
+              <span>Site</span>
+            </Link>
+            <h1 className="text-xl font-serif font-black tracking-tighter">
+              Dashboard
+            </h1>
+          </div>
+          
+          <nav className="space-y-2">
+            <button
+              onClick={() => setActiveTab("blog")}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-sans transition-colors duration-200 ${
+                activeTab === "blog" ? "bg-foreground/5 font-bold" : "text-foreground/60 hover:bg-foreground/[0.02]"
+              }`}
+            >
+              <PenTool size={16} className={activeTab === "blog" ? "text-accent" : ""} />
+              <span>Blog Posts</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("messages")}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-sans transition-colors duration-200 ${
+                activeTab === "messages" ? "bg-foreground/5 font-bold" : "text-foreground/60 hover:bg-foreground/[0.02]"
+              }`}
+            >
+              <Mail size={16} className={activeTab === "messages" ? "text-accent" : ""} />
+              <span>Messages</span>
+            </button>
+          </nav>
         </div>
+
         <button
-          onClick={() => fetchMessages(getStoredPassword())}
-          className="p-2 hover:bg-foreground/5 rounded-lg transition-colors duration-300"
-          title="Refresh"
+          onClick={handleLogout}
+          className="mt-12 w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-sans text-red-400 hover:bg-red-500/10 transition-colors duration-200"
         >
-          <RefreshCw
-            size={14}
-            className={loading ? "animate-spin text-accent" : "text-foreground/30"}
-          />
+          <LogOut size={16} />
+          <span>Sign Out</span>
         </button>
       </div>
 
-      <div className="flex h-[calc(100vh-65px)]">
-        {/* Message list */}
-        <div className="w-full md:w-[400px] border-r border-foreground/5 overflow-y-auto">
-          {messages.length === 0 && !loading && (
-            <div className="flex flex-col items-center justify-center h-full text-foreground/20">
-              <Mail size={32} className="mb-3" />
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold">
-                No messages yet
-              </p>
-            </div>
-          )}
-
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, x: -20 }}
-                onClick={() => setSelected(msg.id)}
-                className={`px-6 py-4 border-b border-foreground/5 cursor-pointer transition-colors duration-200 ${
-                  selected === msg.id
-                    ? "bg-foreground/[0.04]"
-                    : "hover:bg-foreground/[0.02]"
-                }`}
-              >
-                <div className="flex items-start justify-between mb-1">
-                  <div className="flex items-center space-x-2">
-                    {msg.read ? (
-                      <Circle size={8} className="text-foreground/10" />
-                    ) : (
-                      <Circle
-                        size={8}
-                        className="text-accent fill-accent"
-                      />
-                    )}
-                    <span
-                      className={`text-sm font-sans ${msg.read ? "font-medium text-foreground/50" : "font-bold"}`}
-                    >
-                      {msg.name}
-                    </span>
-                  </div>
-                  <span className="text-[9px] text-foreground/25 font-sans whitespace-nowrap">
-                    {formatDate(msg.created_at)}
-                  </span>
-                </div>
-                <p className="text-[10px] text-foreground/30 font-sans ml-5 truncate">
-                  {msg.email}
-                </p>
-                <p className="text-xs text-foreground/40 font-sans ml-5 mt-1 line-clamp-2">
-                  {msg.message}
-                </p>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* Message detail */}
-        <div className="hidden md:flex flex-1 overflow-y-auto">
-          {selectedMessage ? (
-            <motion.div
-              key={selectedMessage.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full p-8 max-w-2xl"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-xl font-serif font-black tracking-tighter">
-                    {selectedMessage.name}
-                  </h2>
-                  <a
-                    href={`mailto:${selectedMessage.email}`}
-                    className="text-xs text-accent hover:underline font-sans"
-                  >
-                    {selectedMessage.email}
-                  </a>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() =>
-                      toggleRead(selectedMessage.id, selectedMessage.read)
-                    }
-                    className="p-2 hover:bg-foreground/5 rounded-lg transition-colors duration-300"
-                    title={
-                      selectedMessage.read ? "Mark as unread" : "Mark as read"
-                    }
-                  >
-                    {selectedMessage.read ? (
-                      <Circle size={16} className="text-foreground/30" />
-                    ) : (
-                      <CheckCircle size={16} className="text-accent" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => deleteMessage(selectedMessage.id)}
-                    className="p-2 hover:bg-red-500/10 rounded-lg transition-colors duration-300"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} className="text-foreground/30 hover:text-red-400" />
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-foreground/25 mb-4">
-                {formatDate(selectedMessage.created_at)}
-              </p>
-
-              <p className="text-sm font-sans text-foreground/70 leading-relaxed whitespace-pre-wrap">
-                {selectedMessage.message}
-              </p>
-            </motion.div>
-          ) : (
-            <div className="flex flex-col items-center justify-center w-full text-foreground/15">
-              <Mail size={40} className="mb-3" />
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold">
-                Select a message
-              </p>
-            </div>
-          )}
-        </div>
+      {/* Main content area */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {activeTab === "messages" ? <MessagesPanel /> : <BlogPanel />}
       </div>
     </div>
   );
