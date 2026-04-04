@@ -4,22 +4,22 @@ export default function Projects() {
       title: "Portfolio Website",
       desc: "Personal portfolio built with Next.js & Tailwind CSS.",
       tech: ["Next.js", "Tailwind"],
-      live: "#",
-      github: "#",
+      live: "https://portfolio-teal-ten-f3bkpkslyk.vercel.app/",
+      github: "https://github.com/tabassumishadneha/portfolio",
     },
     {
       title: "Blog Dashboard",
       desc: "Admin dashboard with add/edit/delete blog features.",
       tech: ["React", "Firebase"],
-      live: "#",
-      github: "#",
+      live: "https://portfolio-teal-ten-f3bkpkslyk.vercel.app/",
+github: "https://github.com/tabassumishadneha/portfolio",
     },
     {
       title: "Guessing Game",
       desc: "Interactive JS game with dynamic UI.",
       tech: ["JavaScript"],
-      live: "#",
-      github: "#",
+      live: "https://portfolio-teal-ten-f3bkpkslyk.vercel.app/",
+github: "https://github.com/tabassumishadneha/portfolio",
     },
   ];
 
