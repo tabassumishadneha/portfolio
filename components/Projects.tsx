@@ -55,19 +55,24 @@ github: "https://github.com/tabassumishadneha/portfolio",
 
             {/* Buttons */}
             <div className="flex gap-3">
-              <a
-                href={project.live}
-                className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-              >
-                Live
-              </a>
-              <a
-                href={project.github}
-                className="text-sm border px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                GitHub
-              </a>
-            </div>
+  <a
+    href={project.live}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+  >
+    Live
+  </a>
+
+  <a
+    href={project.github}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-sm border px-3 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+  >
+    GitHub
+  </a>
+</div>
           </div>
         ))}
       </div>
