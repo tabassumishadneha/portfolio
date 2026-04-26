@@ -1,89 +1,39 @@
-"use client";
+const posts: Record<string, { title: string; date: string; readTime: string; content: string }> = {
+  "how-i-built-my-portfolio": {
+    title: "How I Built My Portfolio",
+    date: "April 2026",
+    readTime: "3 min read",
+    content: `I built this portfolio using Next.js 14 with the App Router and Tailwind CSS...
+    
+    Write your actual content here. Talk about: why you chose Next.js, how you set up the project,
+    what challenges you faced, and what you learned. 3–5 paragraphs is enough.`,
+  },
+  "cpp-vs-javascript": {
+    title: "C++ vs JavaScript",
+    date: "March 2026",
+    readTime: "4 min read",
+    content: `As a CSE student learning both C++ and JavaScript, I noticed some interesting differences...`,
+  },
+  "competitive-programming": {
+    title: "My First Competitive Programming Journey",
+    date: "February 2026",
+    readTime: "5 min read",
+    content: `I started competitive programming to strengthen my problem-solving skills...`,
+  },
+};
 
-import { useEffect, useState, use } from "react";
-import Link from "next/link";
-import { ArrowLeft, Clock } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  created_at: string;
-}
-
-export default function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { slug } = use(params);
-
-  useEffect(() => {
-    async function fetchPost() {
-      try {
-        const { data, error } = await supabase
-          .from("posts")
-          .select("*")
-          .eq("slug", slug)
-          .single();
-        
-        if (error && error.code !== 'PGRST116') throw error;
-        if (data) setPost(data);
-      } catch (error) {
-        console.error("Error fetching post:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (slug) fetchPost();
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-foreground/30">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center space-y-4">
-        <h1 className="text-2xl font-serif font-black tracking-tighter">Post not found</h1>
-        <Link href="/blog" className="text-[10px] uppercase tracking-[0.2em] font-bold text-accent hover:underline">
-          Back to Blog
-        </Link>
-      </div>
-    );
-  }
+export default function BlogPost({ params }: { params: { slug: string } }) {
+  const post = posts[params.slug];
+  if (!post) return <div className="min-h-screen flex items-center justify-center text-white">Post not found.</div>;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center">
-      <header className="w-full max-w-3xl px-8 py-16 flex items-center justify-between">
-        <Link
-          href="/blog"
-          className="text-[10px] uppercase tracking-[0.2em] font-bold text-foreground/30 hover:text-accent transition-colors duration-300 flex items-center space-x-2"
-        >
-          <ArrowLeft size={12} />
-          <span>Back to Blog</span>
-        </Link>
-      </header>
-
-      <article className="w-full max-w-3xl px-8 flex flex-col pb-24">
-        <div className="flex items-center space-x-2 mb-6">
-          <Clock size={14} className="text-accent" />
-          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-foreground/40">
-            {post.created_at ? new Date(post.created_at).toLocaleDateString() : "Draft"}
-          </span>
-        </div>
-        <h1 className="text-4xl md:text-5xl font-serif font-black tracking-tighter mb-12">
-          {post.title}
-        </h1>
-        <div className="prose prose-invert prose-p:font-sans prose-p:text-foreground/80 prose-headings:font-serif prose-headings:tracking-tighter prose-a:text-accent hover:prose-a:text-accent/80 max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: post.content }} />
-        </div>
+    <main className="min-h-screen bg-[#1a1a2e] text-white px-4 py-16">
+      <article className="max-w-2xl mx-auto">
+        <a href="/blog" className="text-cyan-400 text-sm mb-8 block hover:underline">← Back to Blog</a>
+        <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
+        <p className="text-gray-400 text-sm mb-10">{post.date} · {post.readTime}</p>
+        <div className="text-gray-300 leading-relaxed whitespace-pre-line">{post.content}</div>
       </article>
-    </div>
+    </main>
   );
 }
